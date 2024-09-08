@@ -5,7 +5,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="pygo_whois_parser",
-    version="0.0.1",
+    version="0.0.2",
     description="A Python WHOIS parser leveraging a Go-based shared library for efficient domain data extraction.",
     long_description=long_description,
     long_description_content_type="text/markdown",
