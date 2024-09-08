@@ -18,6 +18,7 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Operating System :: OS Independent",
     ],
-    packages=find_packages(),
+    package_dir={"": "app"},
+    packages=find_packages(where="app"),
     install_requires=[]
 )

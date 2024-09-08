@@ -10,7 +10,7 @@ class WhoisParser:
         """
         Initialize the WhoisParser by loading the shared library.
         """
-        self.lib = ctypes.CDLL("./pygo_whois_parser/go-whois-parser/go-whois-parser.so")
+        self.lib = ctypes.CDLL("./go-whois-parser/go-whois-parser.so")
         self.lib.ParseWhois.argtypes = [ctypes.c_char_p]
         self.lib.ParseWhois.restype = ctypes.c_char_p
 
