@@ -22,6 +22,6 @@ setup(
     packages=find_packages(where="app"),
     install_requires=[],
     package_data={
-        "pygo_whois_parser": ["go-whois-parser/go-whois-parser.so"]
+        "pygo_whois_parser": ["app/pygo_whois_parser/src/go-whois-parser/go-whois-parser.so"]
     },
 )
