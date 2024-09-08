@@ -3,6 +3,8 @@ import json
 import os
 from typing import Dict
 
+import pkg_resources
+
 
 class WhoisParser:
     """Class for parsing WHOIS data using a shared Go-based library."""
@@ -11,8 +13,9 @@ class WhoisParser:
         """
         Initialize the WhoisParser by loading the shared library.
         """
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        so_file_path = os.path.join(base_dir, "go-whois-parser", "go-whois-parser.so")
+        so_file_path = pkg_resources.resource_filename(
+            __name__, "src/go-whois-parser/go-whois-parser.so"
+        )
         self.lib = ctypes.CDLL(so_file_path)
         self.lib.ParseWhois.argtypes = [ctypes.c_char_p]
         self.lib.ParseWhois.restype = ctypes.c_char_p
