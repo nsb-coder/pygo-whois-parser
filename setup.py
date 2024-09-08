@@ -18,11 +18,10 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Operating System :: OS Independent",
     ],
-    package_dir={"": "app"},
-    packages=find_packages(where="app"),
+    packages=find_packages(),
     install_requires=[],
     include_package_data=True,
     package_data={
-        "pygo_whois_parser": ["src/go-whois-parser/go-whois-parser.so"]
+        "pygo_whois_parser": ["go-whois-parser/go-whois-parser.so"]
     },
 )
