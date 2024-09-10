@@ -1,8 +1,8 @@
 import ctypes
 import json
+import os
 from typing import Dict
-
-import pkg_resources
+import platform
 
 
 class WhoisParser:
@@ -12,12 +12,24 @@ class WhoisParser:
         """
         Initialize the WhoisParser by loading the shared library.
         """
-        so_file_path = pkg_resources.resource_filename(
-            "pygo_whois_parser", "go-whois-parser/go-whois-parser.so"
-        )
+        so_file_path = self._get_shared_library_path()
         self.lib = ctypes.CDLL(so_file_path)
         self.lib.ParseWhois.argtypes = [ctypes.c_char_p]
         self.lib.ParseWhois.restype = ctypes.c_char_p
+
+    def _get_shared_library_path(self):
+        """Determine the correct shared library based on the OS."""
+        base_dir = f"{os.path.dirname(os.path.abspath(__file__))}/go-whois-parser/"
+        system = platform.system()
+
+        if system == "Linux":
+            return os.path.join(base_dir, "go-whois-parser.so")
+        elif system == "Darwin":
+            return os.path.join(base_dir, "go-whois-parser.dylib")
+        elif system == "Windows":
+            return os.path.join(base_dir, "go-whois-parser.dll")
+        else:
+            raise OSError(f"Unsupported operating system: {system}")
 
     def validate_input(self, whois_raw: str) -> None:
         """

@@ -215,7 +215,31 @@ func findAllByKeywords(normalizedRawText string, keywords []string) []string {
     return results
 }
 
-// Example parsing methods (replace with actual parsing logic)
+func findDateByKeywords(normalizedRawText string, keywords []string, dateFormats []string) *int64 {
+   lines := strings.Split(normalizedRawText, "\n")
+   for _, line := range lines {
+       for _, keyword := range keywords {
+           if strings.Contains(strings.ToLower(line), strings.ToLower(keyword)) {
+               parts := strings.SplitN(line, ":", 2)
+               if len(parts) > 1 {
+                   dateStr := strings.TrimSpace(parts[1])
+                   var parsedTime time.Time
+                   var err error
+                   for _, format := range dateFormats {
+                       parsedTime, err = time.Parse(format, dateStr)
+                       if err == nil {
+                           unixTimestamp := parsedTime.Unix()
+                           return &unixTimestamp
+                       }
+                   }
+               }
+           }
+       }
+   }
+
+   return nil
+}
+
 func findAbuseEmail(normalizedRawText string) *string {
     keywords := []string{
        "Registrar Abuse Contact Email",
@@ -224,7 +248,6 @@ func findAbuseEmail(normalizedRawText string) *string {
     return findByKeywords(normalizedRawText, keywords)
 }
 
-// Function to find the abuse contact telephone
 func findAbuseTelephone(normalizedRawText string) *string {
     keywords := []string{
        "Registrar Abuse Contact Phone",
@@ -233,7 +256,6 @@ func findAbuseTelephone(normalizedRawText string) *string {
     return findByKeywords(normalizedRawText, keywords)
 }
 
-// Function to find the abuse contact information
 func findAbuse(normalizedRawText string) Abuse {
     return Abuse{
        Email:     findAbuseEmail(normalizedRawText),
@@ -241,7 +263,6 @@ func findAbuse(normalizedRawText string) Abuse {
     }
 }
 
-// Functions to find admin details
 func findAdminName(normalizedRawText string) *string {
     keywords := []string{"Admin Name"}
     return findByKeywords(normalizedRawText, keywords)
@@ -253,7 +274,7 @@ func findAdminEmail(normalizedRawText string) *string {
 }
 
 func findAdminTelephone(normalizedRawText string) *string {
-    keywords := []string{"Admin Phone"}
+    keywords := []string{"Admin Phone", "Admin Phone:"}
     return findByKeywords(normalizedRawText, keywords)
 }
 
@@ -262,7 +283,6 @@ func findAdminOrganization(normalizedRawText string) *string {
     return findByKeywords(normalizedRawText, keywords)
 }
 
-// Function to find the admin
 func findAdmin(normalizedRawText string) Admin {
     return Admin{
        Name:         findAdminName(normalizedRawText),
@@ -273,158 +293,68 @@ func findAdmin(normalizedRawText string) Admin {
 }
 
 func findDomain(normalizedRawText string) *string {
-    // Keywords to search for domain name
-    keywords := []string{"Domain Name", "domain"}
-
+    keywords := []string{"Domain Name", "domain:"}
     return findByKeywords(normalizedRawText, keywords)
 }
 
-func findExpiresAt(normalizedRawText string) *int64 {
-    // Keywords to search for expires_at time
-    keywords := []string{
-       "Expiry Date",
-       "Expiration Date",
-       "Expire Date",
-       "expire",
-       "expires",
-       "Expires On",
-       "Expiration Time",
-       "Renewal Date",
-       "Record expires on",
-       "paid-till",
-       "expire-date",
-       "domain_datebilleduntil",
-       "Valid Until",
-       "validity",
-    }
-
-    // Split the text into lines
-    lines := strings.Split(normalizedRawText, "\n")
-
-    // Iterate through each line to find the expires_at time
-    for _, line := range lines {
-       for _, keyword := range keywords {
-          if strings.Contains(strings.ToLower(line), strings.ToLower(keyword)) {
-             // Extract datetime from the line
-             parts := strings.SplitN(line, ":", 2)
-             if len(parts) > 1 {
-                dateStr := strings.TrimSpace(parts[1])
-                // Attempt to parse date string into time.Time
-                parsedTime, err := time.Parse(time.RFC3339, dateStr)
-                if err != nil {
-                   return nil // Return nil if parsing fails
-                }
-                // Convert parsed time to Unix timestamp (int64)
-                unixTimestamp := parsedTime.Unix()
-                return &unixTimestamp
-             }
-          }
-       }
-    }
-
-    // Return nil if expires_at time not found
-    return nil
-}
-
 func findNameServers(normalizedRawText string) []string {
-    keywords := []string{"Name server", "Nameserver", "nameservers", "Nserver", "Host Name"}
-    values := findAllByKeywords(normalizedRawText, keywords)
-    var nameServers []string
+   keywords := []string{"Name server", "Nameserver", "nameservers", "Nserver", "Host Name"}
+   values := findAllByKeywords(normalizedRawText, keywords)
 
-    for _, value := range values {
+   // Use a map to track unique name servers
+   nameServerMap := make(map[string]struct{})
+   for _, value := range values {
        nameServer := strings.ToLower(strings.Split(value, " ")[0])
-       nameServers = append(nameServers, nameServer)
-    }
+       nameServerMap[nameServer] = struct{}{}
+   }
 
-    return nameServers
+   // Convert the map values to a slice
+   var nameServers []string
+   for nameServer := range nameServerMap {
+       nameServers = append(nameServers, nameServer)
+   }
+
+   return nameServers
 }
 
 func findUpdatedAt(normalizedRawText string) *int64 {
-    // Keywords to search for updated_at time
-    keywords := []string{
-       "Updated Date",
-       "Update Date",
-       "updated",
-       "changed",
-       "modified",
-       "Last Updated On",
-       "Last Updated Date",
-       "domain_datelastmodified",
-       "Last Update",
-       "Modified Date",
-       "last-update",
-    }
+   keywords := []string{
+       "Updated Date", "Update Date", "updated", "changed", "modified",
+       "Last Updated On", "Last Updated Date", "domain_datelastmodified",
+       "Last Update", "Modified Date", "last-update",
+   }
+   dateFormats := []string{
+       time.RFC3339, "2006-01-02T15:04:05Z", "2006-01-02", 
+       "January 2, 2006", "02-Jan-2006",
+   }
+   return findDateByKeywords(normalizedRawText, keywords, dateFormats)
+}
 
-    // Split the text into lines
-    lines := strings.Split(normalizedRawText, "\n")
-
-    // Iterate through each line to find the updated_at time
-    for _, line := range lines {
-       for _, keyword := range keywords {
-          if strings.Contains(strings.ToLower(line), strings.ToLower(keyword)) {
-             // Extract datetime from the line
-             parts := strings.SplitN(line, ":", 2)
-             if len(parts) > 1 {
-                dateStr := strings.TrimSpace(parts[1])
-                // Attempt to parse date string into time.Time
-                parsedTime, err := time.Parse(time.RFC3339, dateStr)
-                if err != nil {
-                   return nil // Return nil if parsing fails
-                }
-                // Convert parsed time to Unix timestamp (int64)
-                unixTimestamp := parsedTime.Unix()
-                return &unixTimestamp
-             }
-          }
-       }
-    }
-
-    // Return nil if updated_at time not found
-    return nil
+func findExpiresAt(normalizedRawText string) *int64 {
+   keywords := []string{
+       "Expiry Date", "Expiration Date", "Expire Date", "expire", "expires",
+       "Expires On", "Expiration Time", "Renewal Date", "Record expires on",
+       "paid-till", "expire-date", "domain_datebilleduntil", "Valid Until", 
+       "validity",
+   }
+   dateFormats := []string{
+       time.RFC3339, "2006-01-02T15:04:05Z", "2006-01-02", 
+       "January 2, 2006", "02-Jan-2006",
+   }
+   return findDateByKeywords(normalizedRawText, keywords, dateFormats)
 }
 
 func findRegisteredAt(normalizedRawText string) *int64 {
-    // Keywords to search for registered_at time
-    keywords := []string{
-       "Creation Date",
-       "registered",
-       "created",
-       "activated",
-       "Registration Time",
-       "Registered Date",
-       "Registration Date",
-       "Record created on",
-       "Created On",
-       "registered on",
-       "Created Date",
-    }
-
-    // Split the text into lines
-    lines := strings.Split(normalizedRawText, "\n")
-
-    // Iterate through each line to find the registered_at time
-    for _, line := range lines {
-       for _, keyword := range keywords {
-          if strings.Contains(strings.ToLower(line), strings.ToLower(keyword)) {
-             // Extract datetime from the line
-             parts := strings.SplitN(line, ":", 2)
-             if len(parts) > 1 {
-                dateStr := strings.TrimSpace(parts[1])
-                // Attempt to parse date string into time.Time
-                parsedTime, err := time.Parse(time.RFC3339, dateStr)
-                if err != nil {
-                   return nil // Return nil if parsing fails
-                }
-                // Convert parsed time to Unix timestamp (int64)
-                unixTimestamp := parsedTime.Unix()
-                return &unixTimestamp
-             }
-          }
-       }
-    }
-
-    // Return nil if registered_at time not found
-    return nil
+   keywords := []string{
+       "Creation Date", "Creation Date:", "registered", "created", "activated",
+       "Registration Time", "Registered Date", "Registration Date", 
+       "Record created on", "Created On", "registered on", "Created Date",
+   }
+   dateFormats := []string{
+       time.RFC3339, "2006-01-02T15:04:05Z", "2006-01-02", 
+       "January 2, 2006", "02-Jan-2006",
+   }
+   return findDateByKeywords(normalizedRawText, keywords, dateFormats)
 }
 
 func findRegistrantName(normalizedRawText string) *string {
@@ -441,7 +371,6 @@ func findRegistrantName(normalizedRawText string) *string {
     return findByKeywords(normalizedRawText, keywords)
 }
 
-// Function to find the registrant email
 func findRegistrantEmail(normalizedRawText string) *string {
     keywords := []string{
        "Registrant Email",
@@ -450,10 +379,9 @@ func findRegistrantEmail(normalizedRawText string) *string {
     return findByKeywords(normalizedRawText, keywords)
 }
 
-// Function to find the registrant telephone
 func findRegistrantTelephone(normalizedRawText string) *string {
     keywords := []string{
-       "Registrant Phone",
+       "Registrant Phone","Registrant Phone:",
     }
     return findByKeywords(normalizedRawText, keywords)
 }
@@ -469,7 +397,6 @@ func findRegistrantOrganization(normalizedRawText string) *string {
     return findByKeywords(normalizedRawText, keywords)
 }
 
-// Function to find the registrant details
 func findRegistrant(normalizedRawText string) Registrant {
     return Registrant{
        Name:         findRegistrantName(normalizedRawText),
@@ -480,7 +407,6 @@ func findRegistrant(normalizedRawText string) Registrant {
 }
 
 func findRegistrar(normalizedRawText string) *string {
-    // Keywords to search for registrar
     keywords := []string{
        "Registrar:",
        "Registrar Name",
@@ -496,25 +422,31 @@ func findRegistrar(normalizedRawText string) *string {
 }
 
 func findStatuses(normalizedRawText string) []string {
-    keywords := []string{"Domain Status", "domaintype"}
-    values := findAllByKeywords(normalizedRawText, keywords)
+   keywords := []string{"Domain Status", "domaintype"}
+   values := findAllByKeywords(normalizedRawText, keywords)
 
-    var statuses []string
-    for _, value := range values {
+   // Use a map to track unique statuses
+   statusMap := make(map[string]struct{})
+   for _, value := range values {
        if value == "No Object Found" {
-          statuses = append(statuses, value)
+           statusMap[value] = struct{}{}
        } else {
-          parts := strings.Fields(value)
-          if len(parts) > 0 {
-             statuses = append(statuses, parts[0])
-          }
+           parts := strings.Fields(value)
+           if len(parts) > 0 {
+               statusMap[parts[0]] = struct{}{}
+           }
        }
-    }
+   }
 
-    return statuses
+   // Convert the map values to a slice
+   var statuses []string
+   for status := range statusMap {
+       statuses = append(statuses, status)
+   }
+
+   return statuses
 }
 
-// Functions to find tech details
 func findTechName(normalizedRawText string) *string {
     keywords := []string{"Tech Name", "Tech Contact Name", "Tech Contact"}
     return findByKeywords(normalizedRawText, keywords)
@@ -535,7 +467,6 @@ func findTechOrganization(normalizedRawText string) *string {
     return findByKeywords(normalizedRawText, keywords)
 }
 
-// Function to find the tech
 func findTech(normalizedRawText string) Tech {
     return Tech{
        Name:         findTechName(normalizedRawText),

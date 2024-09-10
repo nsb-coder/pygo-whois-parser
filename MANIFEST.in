@@ -1,1 +1,3 @@
 include pygo_whois_parser/go-whois-parser/go-whois-parser.so
+include pygo_whois_parser/go-whois-parser/go-whois-parser.dylib
+include pygo_whois_parser/go-whois-parser/go-whois-parser.dll
